@@ -8,7 +8,7 @@ This is a proof-of-concept implementation for a somewhat unified API endpoint cl
 alpha - just a prototype to play around run ideas against!
 
 ## Goals
-- Provide a neat routing syntax similar to Laravel Routing
+- Provide a neat routing syntax as concise as popular node.js routers or e.g. Laravel Routing
 - Stick with familiar PW syntax / idioms
 - Make use of builtin $sanitizer to validate route URLs and part values
 - Allow handling of routes through functions, methods and PHP files
@@ -26,7 +26,8 @@ their own template.
 A minimal template (e.g. /site/templates/api.php) would look like this:
 ```php
 <?php namespace ProcessWire;
-* $api->handleRequest();
+
+$api->handleRequest();
 ```
 
 ## Routes
