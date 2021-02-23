@@ -3,18 +3,18 @@ Prototype for a ProcessWire API module for routing and API endpoints
 
 This is a proof-of-concept implementation for a somewhat unified API endpoint class in ProcessWire.
 
-##Status
+## Status
 
 alpha - just a prototype to play around run ideas against!
 
-##Goals
+## Goals
 - Provide a neat routing syntax similar to Laravel Routing
 - Stick with familiar PW syntax / idioms
 - Make use of builtin $sanitizer to validate route URLs and part values
 - Allow handling of routes through functions, methods and PHP files
 
 
-##A Bit of Prose
+## A Bit of Prose
 WireApi registers itself as $api API variable and thus is available as either $api,
 wire('api') or $this->api inside Wire derived classes.
 
@@ -29,7 +29,7 @@ A minimal template (e.g. /site/templates/api.php) would look like this:
 * $api->handleRequest();
 ```
 
-##Routes
+## Routes
 Routes can be attached from almost anywhere, i.e. inside modules, site/ready.php
 or the endpoint template file itself.
 
@@ -38,7 +38,7 @@ wildcard) and a handler, which can be a plain function, a class method or any va
 callable definition accepted by PHP, or the path to a PHP file, which lets you build
 your own 'API template folders', e.g. /site/templates/apitemplates/.
 
-###Examples
+### Examples
 ```PHP
 // Simple GET route that populates the URL pattern paremeter 'number' and handles
 // requests through an anonymous function.
@@ -57,5 +57,5 @@ $api->route(['POST'], '/api/v1/user/{userid}/', $this, 'setUserData')
 $api->routeGET('/api/userlist/', 'apitemplates/userlist');
 ```
 
-##License
+## License
 Released under the terms of Mozilla Public License 2.0. See the LICENSE.md in this repository.
