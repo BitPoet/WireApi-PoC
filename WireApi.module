@@ -61,7 +61,7 @@ class WireApi extends WireData implements Module {
 		return [
 			'title'			=>	__('API', __FILE__),
 			'summary'		=>	__('Provide endpoint routing to expose PW parts through a normalized API', __FILE__),
-			'version'		=>	'0.0.4',
+			'version'		=>	'0.0.5',
 			// Assign numeric autoload value to make sure the module gets loaded
 			// before any other site modules, so that $api is availabile to them
 			// at init() time.
@@ -124,7 +124,7 @@ class WireApi extends WireData implements Module {
 	}
 	
 	public function __call($method, $arguments) {
-		if(preg_match('/^route([A-Z]+)$/', $method), $match) {
+		if(preg_match('/^route([A-Z]+)$/', $method, $match)) {
 			return $this->route([$match[1]], ...$arguments);
 		}
 		return parent::__call($method, $arguments);
@@ -245,7 +245,7 @@ class WireApi extends WireData implements Module {
 		$r->id = $this->routes->count();
 		$this->routes->append($r);
 		
-		return $this;
+		return $r;
 	}
 
 	public function notFound() {
@@ -276,7 +276,7 @@ class ApiRoute extends WireData {
 		$this->set('path', $path);
 		$this->set('type', $type);
 		$this->set('handler', $callable);
-		$this->set('checks', []);
+		$this->set('checks', new WireArray());
 		$this->set('pathValues', []);
 		$this->set('error', '');
 		$this->debug = $debug;
@@ -308,12 +308,12 @@ class ApiRoute extends WireData {
 			$sanitizerMethodName = substr($method, 0, 6);
 			$field = array_shift($arguments);
 			
-			$this->checks[] = [
+			$this->checks->add([
 				'type'		=> 'santizier',
 				'handler'	=> ['Sanitizer', $sanitizerMethodName],
 				'field'		=>	$field,
 				'args'		=>	$arguments
-			];
+			]);
 			
 			return $this;
 		}
@@ -330,7 +330,7 @@ class ApiRoute extends WireData {
 	 * @param array $params Any additional argments to pass to the handler function/method.
 	 * @return object $this
 	 */
-	public function validate($object = null, $method = null, $args = []) {
+	public function check($object = null, $method = null, $params = []) {
 		if($method == null) {
 			$handler = $object;
 		} elseif($object == null) {
@@ -344,11 +344,11 @@ class ApiRoute extends WireData {
 			$handler = '\\ProcessWire\\' . $handler;
 		}
 		
-		$this->checks[] = [
+		$this->checks->add([
 			'type'		=>	'custom',
 			'handler'	=>	$handler,
 			'args'		=>	$params
-		];
+		]);
 		
 		return $this;
 	}
@@ -375,7 +375,7 @@ class ApiRoute extends WireData {
 			return false;
 		}
 		
-		$pathPattern = '~' . preg_replace('~[^/]+~', '[^/]+', $this->path) . '~';
+		$pathPattern = '~' . preg_replace('~\\{[^/}]+\\}~', '[^/]+', $this->path) . '~';
 		$ret = preg_match($pathPattern, $url);
 		if($ret) {
 			$this->debugLog(sprintf("Path %s matches", $this->path));
@@ -456,6 +456,10 @@ class ApiRoute extends WireData {
 					$this->debugLog(sprintf('Constraint of type %s for field %s did not match!', $check['type'], $check['field']));
 					return false;
 				}
+			} elseif($check['type'] == 'custom') {
+				$args = [$url, $this, $check, $this->pathValues];
+				
+				return call_user_func_array($check['handler'], array_merge($args, $check['args']));
 			}
 		}
 		return true;
