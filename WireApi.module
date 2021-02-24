@@ -64,7 +64,7 @@ class WireApi extends WireData implements Module {
 		return [
 			'title'			=>	__('API', __FILE__),
 			'summary'		=>	__('Provide endpoint routing to expose PW parts through a normalized API', __FILE__),
-			'version'		=>	'0.0.8',
+			'version'		=>	'0.0.9',
 			// Assign numeric autoload value to make sure the module gets loaded
 			// before any other site modules, so that $api is availabile to them
 			// at init() time.
@@ -89,6 +89,10 @@ class WireApi extends WireData implements Module {
 	 * /site/templates/api.php
 	 */
 	public function ___handleRequest($options = []) {
+		
+		$found = false;
+		$handled = false;
+		
 		if(isset($options['debug']))
 			$this->debug = $options['debug'];
 		
@@ -98,12 +102,25 @@ class WireApi extends WireData implements Module {
 		
 		foreach($this->routes as $route) {
 			$this->debugLog(sprintf("Checking URL %s against route %s", $url, $route->path));
-			if($route->matches($url) && $route->matchesConstraints($url)) {
-				$route->handleRequest($url);
+			if($route->matches($url)) {
+				if($route->matchesConstraints($url)) {
+					$route->handleRequest($url);
+					$handled = true;
+					break;
+				}
+				$found = true;
 				break;
 			} else {
 				$this->debugLog(sprintf("Route %s did not match", $route->path));
 			}
+		}
+		
+		if(! $found) {
+			$this->header404();
+		}
+		if(! $handled) {
+			$this->header403();
+			exit;
 		}
 	}
 	
@@ -263,6 +280,12 @@ class WireApi extends WireData implements Module {
 		$n++;
 	}
 	
+	protected function header403() {
+		static $n = 0;
+		if(!$n) header("HTTP/1.1 403 Forbidden"); 
+		$n++;
+	}
+
 }
 
 
@@ -403,7 +426,11 @@ class ApiRoute extends WireData {
 			return false;
 		}
 		
-		$pathPattern = '~' . preg_replace('~\\{[^/}]+\\}~', '[^/]+', $this->path) . '~';
+		$pathPattern = '~' . preg_replace(
+			array('~\\{[^/}]+\\}~', '~\\*~'),
+			array('[^/]+', '.*'),
+			$this->path
+		) . '~';
 		$ret = preg_match($pathPattern, $url);
 		if($ret) {
 			$this->debugLog(sprintf("Path %s matches", $this->path));
