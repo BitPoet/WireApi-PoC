@@ -5,7 +5,7 @@ This is a proof-of-concept implementation for a somewhat unified API endpoint cl
 
 ## Status
 
-alpha - just a prototype to play around run ideas against!
+alpha - just a prototype to play around and run ideas against!
 
 Don't even think of using this in production! The WireApi name may become a reserved class in
 PW core at any time, and it will likely be something completely different from this!
