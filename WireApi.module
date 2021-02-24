@@ -61,7 +61,7 @@ class WireApi extends WireData implements Module {
 		return [
 			'title'			=>	__('API', __FILE__),
 			'summary'		=>	__('Provide endpoint routing to expose PW parts through a normalized API', __FILE__),
-			'version'		=>	'0.0.5',
+			'version'		=>	'0.0.6',
 			// Assign numeric autoload value to make sure the module gets loaded
 			// before any other site modules, so that $api is availabile to them
 			// at init() time.
@@ -358,19 +358,8 @@ class ApiRoute extends WireData {
 	 */
 	public function matches($url) {
 		
-		$isAllowedMethod = false;
-		
-		if($this->methods[0] === 'ALL') {
-			$isAllowedMethod = true;
-		} else {
-			foreach($this->methods as $method) {
-				if($this->input->is($method)) {
-					$isAllowedMethod = true;
-				}
-			}
-		}
-		
-		if(! $isAllowedMethod) {
+		$reqMethod = $this->input->requestMethod();
+		if($this->methods[0] !== 'ALL' && ! in_array($reqMethod, $this->methods)) {
 			$this->debugLog(sprintf('Request method %s not allowed, configured methods: %s', $_SERVER['REQUEST_METHOD'], implode(', ', $this->methods)));
 			return false;
 		}
