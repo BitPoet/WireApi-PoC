@@ -64,4 +64,4 @@ $api->routeGET('/api/userlist/', 'apitemplates/userlist');
 ```
 
 ## License
-Released under the terms of Mozilla Public License 2.0. See the LICENSE.md in this repository.
+Released under the terms of Mozilla Public License 2.0. See the LICENSE file in this repository.
