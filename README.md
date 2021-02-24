@@ -135,7 +135,11 @@ $route->check(function($url, $route, $check, $values) { return $values['userid']
 ```PHP
 // Simple GET route that populates the URL pattern paremeter 'number' and handles
 // requests through an anonymous function.
-$api->route(['GET'], '/api/test/{number}/', function($url, $values) { echo json_encode(['number' => $value['number']]); });
+$api->route(
+  ['GET'],
+  '/api/test/{number}/',
+  function($url, $values) { echo json_encode(['number' => $value['number']]); }
+ );
 
 // More verbose POST route that populates $values['userid'], handles the request
 // through the setUserData method of the current class and runs two checks to validate
