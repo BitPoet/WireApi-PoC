@@ -1,0 +1,239 @@
+<?php namespace ProcessWire;
+
+class ProcessWireApi extends Process {
+	
+	public static function getModuleInfo() {
+		return [
+			'title'			=>	__('API Creator', __FILE__),
+			'summary'		=>	__('Create API endpoints', __FILE__),
+			'version'		=>	'0.0.7',
+			'page'			=>	[
+				'name'			=>	'api',
+				'parent'		=>	'setup',
+				'title'			=>	'API'
+			]
+		];
+	}
+	
+	public function ___execute() {
+		
+		$outTop = "";
+		
+		$input = $this->input;
+		$pages = $this->pages;
+		$config = $this->config;
+		$templates = $this->templates;
+		
+		$apiname = "";
+		$templatename = "";
+		$templatefilename = "";
+		
+		$form = $this->buildAddApiForm();
+		
+		if($input->post->submit_check || $input->post->submit_add) {
+			
+			$form->processInput($input->post);
+			
+			$apiname = $form->get('apiname')->attr('value');
+			
+			$templatename = $form->get('templatename')->attr('value');
+			if(empty($templatename)) $templatename = $apiname;
+			
+			$templatefilename = $form->get('templatefilename')->attr('value');
+			if(empty($templatefilename)) $templatefilename = $apiname;
+			if(strtolower(substr($templatefilename, -4)) !== '.php')
+				$templatefilename .= '.php';
+
+		}
+		
+		if($input->post->submit_check) {
+			// Check that template file isn't present yes and that template and page don't exist
+			$ok = true;
+			
+			if($templates->get($templatename)) {
+				$this->error(sprintf($this->_("A template named '%s' already exists"), $templatename));
+				$ok = false;
+			}
+			
+			if($ok && ! $pages->get('/' . $apiname) instanceof NullPage) {
+				$this->error(sprintf($this->_("A page named '%s' under /home already exists"), $apiname));
+				$ok = false;
+			}
+			
+			if($ok && file_exists($config->paths->templates . $templatefilename)) {
+				$this->error(sprintf($this->_("A template file named '%s' already exists"), $templatefilename));
+				$ok = false;
+			}
+			
+			if($ok) $this->message('All checks were fine');
+			
+			if($ok)
+				$button = $this->makeSubmitButton('add');
+			else
+				$button = $this->makeSubmitButton('check');
+			
+		} elseif($input->post->submit_add) {
+			// Add new api
+			
+			$this->createTemplate($templatename, $templatefilename);
+			
+			if(! $this->createPage($apiname, $templatename)) {
+				
+				$this->error(sprintf($this->_('Page %s could not be created, rolling back template creation'), $apiname));
+				$this->rollbackTemplate($templatename);
+				
+				$button = $this->makeSubmitButton('check');
+				
+			} else {
+			
+				if(! $this->installFile($templatefilename)) {
+					$downloadLink = "<a href='{$this->page->url}/template?filename=$templatefilename' target='blank'>$templatefilename</a>";
+					$outTop .= "<div>" .
+							   $this->_("Template file could not be written. You can download it from the following link and upload it to your templates directory manually:") .
+							   "<br><string>" . $downloadlink . "</strong>" .
+							   "</div>";
+				}
+				
+				$this->message(sprintf($this->_("API endpoint %s with template %s and file %s was created"), $apiname, $templatename, $templatefilename));
+			
+				// Reset form fields after successful creation
+				$form->get('apiname')->attr('value', 'api');
+				$form->get('templatename')->attr('value', '');
+				$form->get('templatefilename')->attr('value', '');
+			
+				$button = $this->makeSubmitButton('check');
+			}
+			
+		} else {
+			
+			$button = $this->makeSubmitButton('check');
+			
+		}
+		
+		$form->append($button);
+		
+		return $outTop . $form->render();
+		
+	}
+	
+	
+	public function executeTemplate() {
+		
+		$filename = $input->get->filename;
+		$http = new WireHttp();
+		$http->sendFile($this->config->paths->{$this->className} . 'api-template.php', [
+			'forceDownload'		=>	true,
+			'downloadFilename'	=>	$filename
+		]);
+		
+	}
+	
+	
+	protected function createTemplate($name, $file) {
+		
+		$fg = $this->fieldgroups->get($name);
+		if(! $fg) {
+			$fg = new Fieldgroup();
+			$fg->name = $name;
+			$fg->save();
+		}
+		
+		$tpl = new Template();
+		$tpl->fieldgroup = $fg;
+		$tpl->name = $name;
+		$tpl->urlSegments = true;
+		$tpl->slashUrlSegments = 0;
+		$tpl->noChangeTemplate = 1;
+		$tpl->noSettings = 1;
+		
+		if($name !== "$file.php") {
+			$tpl->altFilename = $file;
+		}
+		
+		$tpl->noAppendTemplateFile = true;
+		$tpl->noPrependTemplateFile = true;
+		
+		return $tpl->save();
+		
+	}
+	
+	
+	protected function createPage($name, $templatename) {
+		
+		$page = new Page();
+		$page->name = $name;
+		$page->template = $templatename;
+		$page->parent = $this->config->rootPageID;
+		$page->addStatus(Page::statusHidden);
+		$page->removeStatus(Page::statusUnpublished);
+		$page->addStatus(Page::statusLocked);
+		return $page->save();
+		
+	}
+	
+	protected function rollbackTemplate($name) {
+		
+		$tpl = $this->templates->get($name);
+		if($tpl)
+			$this->templates->delete($tpl);
+		
+		$fg = $this->fieldgroups->get($name);
+		if($fg)
+			$this->fieldgroups->delete($fg);
+		
+		return true;
+		
+	}
+	
+	
+	protected function installFile($filename) {
+		
+		return $this->files->copy(
+			$this->config->paths->{$this->className} . 'api-template.php',
+			$this->config->paths->templates . $filename
+		);
+		
+	}
+	
+	
+	protected function makeSubmitButton($mode) {
+		
+		$button = $this->modules->get("InputfieldSubmit");
+		$button->attr('id+name', 'submit_' . $mode);
+		$button->attr('value', $mode == 'check' ? 'Check input' : 'Create API endpint');
+		$button->header = true;
+		return $button;
+		
+	}
+	
+	protected function buildAddApiForm() {
+		
+		$form = $this->modules->get('InputfieldForm');
+		
+		$form->attr('id', 'ProcessWireApi'); 
+		$form->addClass('InputfieldFormFocusFirst');
+		$form->attr('action', './' . ($this->input->get('modal') ? "?modal=1" : '')); 
+		$form->attr('method', 'POST');
+		
+		$f = $this->modules->get('InputfieldText');
+		$f->attr('id+name', 'apiname');
+		$f->attr('value', 'api');
+		$f->label = $this->_("Name of the endpoint page");
+		$form->append($f);
+
+		$f = $this->modules->get('InputfieldText');
+		$f->attr('id+name', 'templatename');
+		$f->label = $this->_("Name of the endpoint template");
+		$f->notes = $this->_("Leave empty to use same as page name");
+		$form->append($f);
+
+		$f = $this->modules->get('InputfieldText');
+		$f->attr('id+name', 'templatefilename');
+		$f->label = $this->_("Filename for PHP template");
+		$f->notes = $this->_("Leave empty to use same as page name. PHP extension will be appended.");
+		$form->append($f);
+		
+		return $form;
+	}
+	
+}
