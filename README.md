@@ -42,7 +42,77 @@ wildcard) and a handler, which can be a plain function, a class method or any va
 callable definition accepted by PHP, or the path to a PHP file, which lets you build
 your own 'API template folders', e.g. /site/templates/apitemplates/.
 
-### Examples
+## Placeholders
+
+Like almost all routing frameworks, you can use placeholders in your route paths
+where dynamic values can occur and assign names to those, e.g.
+```/api/user/{userid}```
+
+The names then can be referenced in your checks.
+
+## Checks
+
+You will want to check not only if a route's path applies to the current request,
+but also make sure that the correctly formatted arguments are passed in the URL
+and that the user has the necessary roles.
+
+After creating a new route, you can add any number of checks which will be
+processed in the order in which they were added.
+
+### Sanitizer Checks
+
+WireApi makes use of $sanitizer to avoid reinventing the wheel. So no matter if you
+want to check if a URL argument is numeric, is uppercase or matches a regex, just to
+name a few, if there is already a Sanitizer method for it in PW, you can use it.
+
+All methods of $sanitizer are exposed as check_SANITIZERMETHOD, i.e.
+```$sanitizer->unsignedInt``` becomes ```$route->check_unsignedInt```etc.
+
+The first argument passed to check_SOMETHING must be the name of the URL argument.
+
+```php
+$api->route('/api/user/{userid}/', 'apitemplates/user')->check_unsignedInt('userid');
+```
+
+WireApi calls the $sanitizer method on the value in the captured field and compares
+it with its original value. If both are identical, the check is okay.
+
+### Role Checks
+
+You can limit API access to certain user roles. Just call ```roles()``` on the route
+and pass it the role name that is allowed. If you want to grant execution rights to
+multiple roles, simply separate them with a pipe.
+
+```php
+$api->route('/api/secret/call/', 'apitemplates/secret')->roles('superuser|guest');
+```
+
+### Custom Functions / Methods
+
+You may want to perform your very own checks to see if a route may be called.
+In this case, you can assign a function or method that takes the following
+arguments:
+
+- $url The URL that was called
+- $route The WireRoute object
+- $check The associative array with the configuration data of the current check
+- $values The associative array with all URL arguments
+
+```
+$route = $api->route(['POST'], '/api/v1/user/{userid}/', $this, 'setUserData');
+
+// Set the checkUserData method in the current class as the check method:
+$route->check($this, 'checkUserData');
+
+// The next two are equivalent and assign a named function:
+$route->check(null, 'checkUserData')
+$route->check('checkUserData')
+
+// Use an anomymous inline function:
+$route->check(function($url, $route, $check, $values) { return $values['userid'] < 999999; });
+```
+
+### Verbose Examples
 ```PHP
 // Simple GET route that populates the URL pattern paremeter 'number' and handles
 // requests through an anonymous function.
