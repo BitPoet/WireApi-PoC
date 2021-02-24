@@ -15,6 +15,7 @@ PW core at any time, and it will likely be something completely different from t
 - Stick with familiar PW syntax / idioms
 - Make use of builtin $sanitizer to validate route URLs and part values
 - Allow handling of routes through functions, methods and PHP files
+- Ease creation of API endpoints
 
 
 ## A Bit of Prose
@@ -32,6 +33,24 @@ A minimal template (e.g. /site/templates/api.php) would look like this:
 
 $api->handleRequest();
 ```
+
+## Endpoints
+
+You can have any number of API endpoints. Behind the scene, they are just pages that
+call ```$api->handleRequest()```.
+
+To make this even easier, this module ships with ProcessWireApi which adds itself
+to the backend under Setup -> API.
+
+To create an API endpoint, just enter the desired page name (always under /home),
+and optionally the template name and/or template file name if they differ.
+
+ProcessWireApi will create the template, page and, if the server has write access
+to site/templates, also the template file. If the web server doesn#t have write
+access, you can download the template from the API creator interface or copy the
+api-template.php from the modules directory there and rename it.
+
+![API endpoint creation](https://raw.githubusercontent.com/BitPoet/bitpoet.github.io/master/img/ProcessWireApi_1.png)
 
 ## Routes
 Routes can be attached from almost anywhere, i.e. inside modules, site/ready.php
