@@ -61,13 +61,26 @@ wildcard) and a handler, which can be a plain function, a class method or any va
 callable definition accepted by PHP, or the path to a PHP file, which lets you build
 your own 'API template folders', e.g. /site/templates/apitemplates/.
 
-## Placeholders
+### Placeholders
 
 Like almost all routing frameworks, you can use placeholders in your route paths
 where dynamic values can occur and assign names to those, e.g.
 ```/api/user/{userid}```
 
 The names then can be referenced in your checks.
+
+### Handler Output
+
+You can just return output like in any template.
+
+There is a shorthand to output JSON data though, namely
+
+```php
+$api->jsonResponse($json);
+```
+
+This sets the content type to application/json and outputs the data in JSON notation.
+If $json is already a string, no JSON conversion will be done.
 
 ## Checks
 
