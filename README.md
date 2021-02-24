@@ -52,6 +52,7 @@ api-template.php from the modules directory there and rename it.
 
 ![API endpoint creation](https://raw.githubusercontent.com/BitPoet/bitpoet.github.io/master/img/ProcessWireApi_1.png)
 
+
 ## Routes
 Routes can be attached from almost anywhere, i.e. inside modules, site/ready.php
 or the endpoint template file itself.
@@ -81,6 +82,15 @@ $api->jsonResponse($json);
 
 This sets the content type to application/json and outputs the data in JSON notation.
 If $json is already a string, no JSON conversion will be done.
+
+### HTTP Status Code
+
+API endpoints don't throw a Wire404Exception, instead, they set the status code manually.
+
+If no matching route is found, HTTP status 404 (Not Found) is returned.
+
+If a route is found, but one of the checks failed, HTTP status 403 (Forbidden) is returned.
+
 
 ## Checks
 
@@ -144,7 +154,7 @@ $route->check('checkUserData')
 $route->check(function($url, $route, $check, $values) { return $values['userid'] < 999999; });
 ```
 
-### Verbose Examples
+## Verbose Examples
 ```PHP
 // Simple GET route that populates the URL pattern paremeter 'number' and handles
 // requests through an anonymous function.
