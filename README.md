@@ -154,6 +154,25 @@ $route->check('checkUserData')
 $route->check(function($url, $route, $check, $values) { return $values['userid'] < 999999; });
 ```
 
+## Debug Logging
+
+You can globally enable debug logging for the API by setting ```$api->debug = true;```.
+
+You enable debug logging for request handling by setting the debug option when you
+call the handler.
+
+```php
+$api->handleRequest(['debug' => true]);
+```
+
+You can enable debug logging for an individual route by invoking
+
+```php
+$route->setDebug(true);
+```
+
+All log outputs are written to the **api** log facility in ProcessWire.
+
 ## Verbose Examples
 ```PHP
 // Simple GET route that populates the URL pattern paremeter 'number' and handles
